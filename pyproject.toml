@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autoclicker"
+version = "0.1.0"
+description = "Cross-platform auto clicker with an HTML/CSS interface"
+requires-python = ">=3.9"
+dependencies = [
+    "pywebview>=5.0",
+    "pynput>=1.7.6",
+    "platformdirs>=3.0",
+    "darkdetect>=0.8",
+]
+
+[project.scripts]
+autoclicker = "autoclicker.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+autoclicker = ["ui/*"]

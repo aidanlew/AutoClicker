@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Auto Clicker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <section id="speedSection" class="config">
+    <h2>Click speed</h2>
+    <div class="speed-row">
+      <label for="cps">Clicks / second</label>
+      <input id="cps" type="text" inputmode="decimal" autocomplete="off">
+      <label for="interval" class="second">Interval (ms)</label>
+      <input id="interval" type="text" inputmode="decimal" autocomplete="off">
+    </div>
+    <input id="speed" type="range" min="0" max="1000" aria-label="Click speed">
+    <div class="presets" id="presets">
+      <button data-cps="1">1</button>
+      <button data-cps="5">5</button>
+      <button data-cps="10">10</button>
+      <button data-cps="25">25</button>
+      <button data-cps="50">50</button>
+      <button data-cps="100">100</button>
+      <button data-cps="1000">1000</button>
+    </div>
+  </section>
+
+  <section class="config">
+    <h2>Click</h2>
+    <div class="field">
+      <label>Button</label>
+      <div class="seg" id="buttonSeg" role="radiogroup" aria-label="Mouse button">
+        <button data-value="left">Left</button>
+        <button data-value="right">Right</button>
+        <button data-value="middle">Middle</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Type</label>
+      <div class="seg" id="typeSeg" role="radiogroup" aria-label="Click type">
+        <button data-value="single">Single</button>
+        <button data-value="double">Double</button>
+        <button data-value="hold">Hold</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Position</label>
+      <span id="posText" class="muted">Follows cursor</span>
+      <div class="actions">
+        <button id="pin">Pin here</button>
+        <button id="follow">Follow</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="limits" class="config">
+    <h2>Limits</h2>
+    <div class="field" id="stopAfterRow">
+      <label for="stopAfter">Stop after</label>
+      <div class="inline">
+        <input id="stopAfter" type="text" inputmode="numeric" autocomplete="off">
+        <span class="muted">clicks</span>
+      </div>
+    </div>
+    <div class="field">
+      <label for="delay">Start delay</label>
+      <div class="inline">
+        <input id="delay" type="text" inputmode="decimal" autocomplete="off">
+        <span class="muted">seconds</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="config">
+    <h2>Toggle hotkey</h2>
+    <div class="hotkey-row">
+      <span id="hotkey" class="hotkey"></span>
+      <button id="changeHotkey">Change…</button>
+    </div>
+    <p id="hotkeyHint" class="hint">Works while any app is focused. Function keys avoid clashes.</p>
+  </section>
+
+  <footer>
+    <div class="footer-row">
+      <button id="start">Start</button>
+      <label class="check">
+        <input id="onTop" type="checkbox">
+        <span>Always on top</span>
+      </label>
+    </div>
+    <div id="status" class="status" aria-live="polite">Idle</div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
