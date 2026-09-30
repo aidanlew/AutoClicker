@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(SPECPATH).parent
+ICONS = ROOT / "packaging"  # icon.svg is the source; .icns/.ico are generated from it
 VERSION = os.environ.get("APP_VERSION", "0.0.0")
 
 # pynput picks its OS backend at runtime, so PyInstaller can't see the import.
@@ -21,7 +22,8 @@ a = Analysis(
 pyz = PYZ(a.pure)
 
 if sys.platform == "win32":
-    exe = EXE(pyz, a.scripts, a.binaries, a.datas, [], name="AutoClicker", console=False)
+    exe = EXE(pyz, a.scripts, a.binaries, a.datas, [], name="AutoClicker", console=False,
+              icon=str(ICONS / "icon.ico"))
 else:
     exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="AutoClicker", console=False)
     coll = COLLECT(exe, a.binaries, a.datas, name="AutoClicker")
@@ -30,6 +32,7 @@ else:
             coll,
             name="AutoClicker.app",
             bundle_identifier="io.github.autoclicker",
+            icon=str(ICONS / "icon.icns"),
             version=VERSION,
             info_plist={"NSHighResolutionCapable": True},
         )

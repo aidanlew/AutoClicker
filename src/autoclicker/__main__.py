@@ -32,7 +32,8 @@ def main() -> None:
     )
     api._attach(window)
     window.events.closed += api._shutdown
-    webview.start(api._start_services)
+    # Window icon for Linux (GTK/Qt); macOS and Windows get theirs from the packaged app.
+    webview.start(api._start_services, icon=str(UI_DIR / "icon.png"))
 
 
 if __name__ == "__main__":
