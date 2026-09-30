@@ -32,11 +32,9 @@ class SluggishEvent(threading.Event):
         return super().wait(None if timeout is None else timeout + 0.03)
 
 
-def run_engine(settings, until=lambda engine: False, timeout=2.0, should_skip=None, stop_event=None):
+def run_engine(settings, until=lambda engine: False, timeout=2.0, stop_event=None):
     mouse, updates = FakeMouse(), []
     engine = ClickerEngine(mouse, on_update=updates.append)
-    if should_skip:
-        engine.should_skip = should_skip
     if stop_event:
         engine._stop = stop_event
     engine.start(settings)
@@ -90,15 +88,6 @@ class ClickerEngineTest(unittest.TestCase):
         self.assertLess(t[100] - t[1], 0.05)
         # ...and the remaining ~200 are paced at 1 ms, not replayed instantly.
         self.assertGreater(t[299] - t[1], 0.15)
-
-    def test_skips_clicks_while_cursor_over_app(self):
-        engine, mouse, updates = run_engine(settings(cps=1000), timeout=0.2, should_skip=lambda: True)
-        self.assertEqual(mouse.events, [])
-        self.assertIn("paused", [u["state"] for u in updates])
-
-    def test_skip_does_not_apply_to_pinned_position(self):
-        _, mouse, _ = run_engine(settings(cps=1000, position=[1, 1], stop_after=1), should_skip=lambda: True)
-        self.assertIn(("click", "left", 1), mouse.events)
 
     def test_stop_during_start_delay_never_clicks(self):
         engine, mouse, updates = run_engine(settings(cps=1000, start_delay=5), timeout=0.2)

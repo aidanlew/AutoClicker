@@ -32,7 +32,7 @@ class PynputMouse:
 class ClickerEngine:
     """Clicks on a background thread; reports progress through on_update(state_dict).
 
-    States sent to on_update: countdown, running, paused, idle.
+    States sent to on_update: countdown, running, idle.
     """
 
     def __init__(self, mouse, on_update: Callable[[dict], None] = lambda state: None):
@@ -42,8 +42,6 @@ class ClickerEngine:
         self._thread: Optional[threading.Thread] = None
         self._lock = threading.Lock()
         self.clicks = 0
-        # Returns True while clicks should be held back (the cursor is over our own window).
-        self.should_skip: Callable[[], bool] = lambda: False
 
     @property
     def running(self) -> bool:
@@ -90,29 +88,22 @@ class ClickerEngine:
             if self._stop.wait(min(UPDATE_INTERVAL, remaining)):
                 return False
 
-    def _skipping(self, s: Settings) -> bool:
-        return s.position is None and self.should_skip()
-
     def _click_loop(self, s: Settings) -> None:
         interval = 1.0 / s.cps
         count = 2 if s.click_type == "double" else 1
         next_click = time.perf_counter()
-        last_emit, last_state = 0.0, None
+        last_emit = 0.0
         while not self._stop.is_set():
-            if self._skipping(s):
-                state = "paused"
-            else:
-                state = "running"
-                if s.position:
-                    self._mouse.move(*s.position)
-                self._mouse.click(s.button, count)
-                self.clicks += 1
-                if s.stop_after and self.clicks >= s.stop_after:
-                    return
+            if s.position:
+                self._mouse.move(*s.position)
+            self._mouse.click(s.button, count)
+            self.clicks += 1
+            if s.stop_after and self.clicks >= s.stop_after:
+                return
             now = time.perf_counter()
-            if state != last_state or now - last_emit >= UPDATE_INTERVAL:
-                self._emit(state)
-                last_emit, last_state = now, state
+            if now - last_emit >= UPDATE_INTERVAL:
+                self._emit("running")
+                last_emit = now
             # Schedule against absolute deadlines so sleep overhead doesn't accumulate.
             # If a wait overslept, the next clicks fire immediately to keep the average
             # rate, but never more than MAX_LAG worth of them.

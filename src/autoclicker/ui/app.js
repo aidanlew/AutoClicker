@@ -22,7 +22,6 @@ let warning = null;
 let settings = {};
 let saveTimer = null;
 let capturingHotkey = false;
-let cursorOverApp = false;
 let lastRunState = { state: "idle", clicks: 0 };
 
 // ---------- persistence ----------
@@ -222,7 +221,6 @@ function statusText(s) {
   switch (s.state) {
     case "countdown": return `Starting in ${Math.ceil(s.remaining)}…`;
     case "running": return `Clicking — ${s.clicks.toLocaleString()} clicks`;
-    case "paused": return "Paused while the cursor is over this window";
     default: return s.clicks > 0 ? `Stopped — ${s.clicks.toLocaleString()} clicks` : warning || "Idle";
   }
 }
@@ -260,16 +258,6 @@ function bindFooter() {
   });
 }
 
-// Clicks that would land on this window are held back so Stop stays clickable.
-function bindCursorTracking() {
-  const setOver = (over) => {
-    if (over === cursorOverApp) return;
-    cursorOverApp = over;
-    api.set_cursor_over_app(over);
-  };
-  document.addEventListener("mousemove", () => setOver(true));
-  document.documentElement.addEventListener("mouseleave", () => setOver(false));
-}
 
 // ---------- window size ----------
 
@@ -312,7 +300,6 @@ async function init() {
   bindLimits();
   bindHotkey();
   bindFooter();
-  bindCursorTracking();
   bindWindowFit();
 }
 

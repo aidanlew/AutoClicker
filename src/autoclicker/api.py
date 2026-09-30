@@ -38,9 +38,7 @@ class Api:
         self._settings = settings
         self._window = None
         self._shown = threading.Event()
-        self._cursor_over_app = False
         self._engine = ClickerEngine(PynputMouse(), on_update=self._queue_update)
-        self._engine.should_skip = lambda: self._cursor_over_app
         self._hotkeys = HotkeyListener(lambda: self._engine.toggle(self._settings))
         self._latest_update: Optional[dict] = None
         self._update_ready = threading.Event()
@@ -121,9 +119,6 @@ class Api:
 
     def pause_hotkey(self, paused: bool) -> None:
         self._hotkeys.paused = bool(paused)
-
-    def set_cursor_over_app(self, over: bool) -> None:
-        self._cursor_over_app = bool(over)
 
     def set_always_on_top(self, on: bool) -> None:
         self._settings.always_on_top = bool(on)
