@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <section id="speedSection" class="config">
+  <section class="config">
     <h2>Click speed</h2>
     <div class="speed-row">
       <label for="cps">Clicks / second</label>
@@ -42,7 +42,6 @@
       <div class="seg" id="typeSeg" role="radiogroup" aria-label="Click type">
         <button data-value="single">Single</button>
         <button data-value="double">Double</button>
-        <button data-value="hold">Hold</button>
       </div>
     </div>
     <div class="field">
@@ -57,7 +56,7 @@
 
   <section id="limits" class="config">
     <h2>Limits</h2>
-    <div class="field" id="stopAfterRow">
+    <div class="field">
       <label for="stopAfter">Stop after</label>
       <div class="inline">
         <input id="stopAfter" type="text" inputmode="numeric" autocomplete="off">

@@ -279,8 +279,6 @@ footer {
 
 /* ---- states ---- */
 
-.dim { opacity: 0.45; }
-
 body.locked .config {
   opacity: 0.5;
   pointer-events: none;

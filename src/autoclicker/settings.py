@@ -11,7 +11,7 @@ from platformdirs import user_config_dir
 CONFIG_PATH = Path(user_config_dir("AutoClicker", appauthor=False)) / "settings.json"
 
 BUTTONS = ("left", "right", "middle")
-CLICK_TYPES = ("single", "double", "hold")
+CLICK_TYPES = ("single", "double")
 MIN_CPS, MAX_CPS = 0.01, 1000.0
 
 

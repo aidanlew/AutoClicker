@@ -27,17 +27,12 @@ class PynputMouse:
     def click(self, button: str, count: int = 1) -> None:
         self._mouse.click(self._buttons[button], count)
 
-    def press(self, button: str) -> None:
-        self._mouse.press(self._buttons[button])
-
-    def release(self, button: str) -> None:
-        self._mouse.release(self._buttons[button])
 
 
 class ClickerEngine:
     """Clicks on a background thread; reports progress through on_update(state_dict).
 
-    States sent to on_update: countdown, running, paused, holding, idle.
+    States sent to on_update: countdown, running, paused, idle.
     """
 
     def __init__(self, mouse, on_update: Callable[[dict], None] = lambda state: None):
@@ -80,10 +75,7 @@ class ClickerEngine:
         try:
             with precise_timers():
                 if self._countdown(s.start_delay):
-                    if s.click_type == "hold":
-                        self._hold(s)
-                    else:
-                        self._click_loop(s)
+                    self._click_loop(s)
         finally:
             self._emit("idle")
 
@@ -131,20 +123,6 @@ class ClickerEngine:
             wait = next_click - time.perf_counter()
             if wait > 0 and self._stop.wait(wait):
                 return
-
-    def _hold(self, s: Settings) -> None:
-        while self._skipping(s):
-            self._emit("paused")
-            if self._stop.wait(UPDATE_INTERVAL):
-                return
-        if s.position:
-            self._mouse.move(*s.position)
-        self._mouse.press(s.button)
-        try:
-            self._emit("holding")
-            self._stop.wait()
-        finally:
-            self._mouse.release(s.button)
 
     def _emit(self, state: str, **extra) -> None:
         self._on_update({"state": state, "clicks": self.clicks, **extra})

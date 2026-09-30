@@ -18,11 +18,6 @@ class FakeMouse:
         self.events.append(("click", button, count))
         self.click_times.append(time.perf_counter())
 
-    def press(self, button):
-        self.events.append(("press", button))
-
-    def release(self, button):
-        self.events.append(("release", button))
 
 
 def settings(**overrides):
@@ -110,9 +105,6 @@ class ClickerEngineTest(unittest.TestCase):
         self.assertEqual(mouse.events, [])
         self.assertEqual(updates[0]["state"], "countdown")
 
-    def test_hold_presses_until_stopped(self):
-        _, mouse, _ = run_engine(settings(click_type="hold", button="middle"), timeout=0.1)
-        self.assertEqual(mouse.events, [("press", "middle"), ("release", "middle")])
 
 
 class SettingsTest(unittest.TestCase):
@@ -121,6 +113,7 @@ class SettingsTest(unittest.TestCase):
                                 "position": "x", "unknown": 1})
         self.assertEqual(s.cps, 1000)
         self.assertEqual(s.button, "left")
+        self.assertEqual(Settings.from_dict({"click_type": "hold"}).click_type, "single")  # removed option
         self.assertIsNone(s.stop_after)
         self.assertEqual(s.start_delay, 0)
         self.assertIsNone(s.position)

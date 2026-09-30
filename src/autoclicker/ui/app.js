@@ -86,16 +86,8 @@ function bindSeg(el, key) {
     if (!b) return;
     settings[key] = b.dataset.value;
     renderSeg(el, settings[key]);
-    renderHoldMode();
     save();
   });
-}
-
-function renderHoldMode() {
-  // Speed and click limits don't apply while holding the button down.
-  const hold = settings.click_type === "hold";
-  $("speedSection").classList.toggle("dim", hold);
-  $("stopAfterRow").classList.toggle("dim", hold);
 }
 
 function renderPosition() {
@@ -231,7 +223,6 @@ function statusText(s) {
     case "countdown": return `Starting in ${Math.ceil(s.remaining)}…`;
     case "running": return `Clicking — ${s.clicks.toLocaleString()} clicks`;
     case "paused": return "Paused while the cursor is over this window";
-    case "holding": return `Holding ${settings.button} button`;
     default: return s.clicks > 0 ? `Stopped — ${s.clicks.toLocaleString()} clicks` : warning || "Idle";
   }
 }
@@ -301,7 +292,6 @@ async function init() {
   setCps(settings.cps);
   renderSeg($("buttonSeg"), settings.button);
   renderSeg($("typeSeg"), settings.click_type);
-  renderHoldMode();
   renderPosition();
   renderLimits();
   renderHotkey();
