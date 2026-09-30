@@ -208,12 +208,12 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 16px; border: 0; bo
 /* ---- hotkey ---- */
 
 .hotkey-row {
-  display: grid;
-  grid-template-columns: 228px auto;
+  display: flex;
   align-items: center;
+  gap: 16px;
   margin-top: 4px;
 }
-.hotkey-row button { justify-self: start; width: 100px; padding: 0; }
+.hotkey-row button { width: 100px; padding: 0; }
 
 .hotkey {
   font-size: 22px;
@@ -221,11 +221,6 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 16px; border: 0; bo
   letter-spacing: 0.02em;
 }
 
-.hint {
-  margin: 5px 0 0;
-  color: var(--muted);
-  font-size: 11.5px;
-}
 
 /* ---- footer ---- */
 

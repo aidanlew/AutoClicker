@@ -5,7 +5,6 @@ const $ = (id) => document.getElementById(id);
 const MIN_CPS = 0.01;
 const MAX_CPS = 1000;
 const SLIDER_MAX = 1000; // slider is log-scaled over 1..1000 clicks/second
-const DEFAULT_HINT = "Works while any app is focused. Function keys avoid clashes.";
 const CONTENT_WIDTH = 460; // the layout is designed for this width
 
 const MAC_MODS = { "<ctrl>": "⌃", "<alt>": "⌥", "<shift>": "⇧", "<cmd>": "⌘" };
@@ -24,6 +23,7 @@ let settings = {};
 let saveTimer = null;
 let capturingHotkey = false;
 let cursorOverApp = false;
+let lastRunState = { state: "idle", clicks: 0 };
 
 // ---------- persistence ----------
 
@@ -184,7 +184,7 @@ function endHotkeyCapture() {
   capturingHotkey = false;
   api.pause_hotkey(false);
   $("changeHotkey").textContent = "Change…";
-  $("hotkeyHint").textContent = DEFAULT_HINT;
+  renderRunState(lastRunState);
   renderHotkey();
 }
 
@@ -194,7 +194,7 @@ function bindHotkey() {
     capturingHotkey = true;
     api.pause_hotkey(true);
     $("changeHotkey").textContent = "Press keys…";
-    $("hotkeyHint").textContent = "Press the new shortcut, or Esc to cancel.";
+    showMessage("Press the new shortcut, or Esc to cancel.");
   });
   document.addEventListener("keydown", async (e) => {
     if (!capturingHotkey) return;
@@ -203,7 +203,7 @@ function bindHotkey() {
     const combo = toCombo(e);
     if (combo === undefined) return;
     if (combo === null) {
-      $("hotkeyHint").textContent = "That key can't be used. Try a letter or function key.";
+      showMessage("That key can't be used. Try a letter or function key.");
       return;
     }
     const res = await api.set_hotkey(combo);
@@ -211,7 +211,7 @@ function bindHotkey() {
       settings.hotkey = combo;
       endHotkeyCapture();
     } else {
-      $("hotkeyHint").textContent = res.error;
+      showMessage(res.error);
     }
   });
 }
@@ -228,6 +228,7 @@ function statusText(s) {
 }
 
 function renderRunState(s) {
+  lastRunState = s;
   const running = s.state !== "idle";
   document.body.classList.toggle("locked", running);
   $("start").textContent = running ? "Stop" : "Start";
@@ -237,6 +238,12 @@ function renderRunState(s) {
 }
 
 window.onEngineUpdate = renderRunState;
+
+// Temporary prompt in the status line; the next renderRunState replaces it.
+function showMessage(text) {
+  $("status").textContent = text;
+  $("status").classList.remove("warn");
+}
 
 function bindFooter() {
   $("start").addEventListener("click", () => {
