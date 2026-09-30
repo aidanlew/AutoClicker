@@ -1,23 +1,25 @@
 import threading
 import time
 import unittest
+from types import SimpleNamespace
+from unittest import mock
 
 from autoclicker.clicker import ClickerEngine
 from autoclicker.settings import Settings
 
 
 class FakeMouse:
-    def __init__(self):
+    def __init__(self, clock=time.perf_counter):
         self.events = []
         self.click_times = []
+        self._clock = clock
 
     def move(self, x, y):
         self.events.append(("move", x, y))
 
     def click(self, button, count=1):
         self.events.append(("click", button, count))
-        self.click_times.append(time.perf_counter())
-
+        self.click_times.append(self._clock())
 
 
 def settings(**overrides):
@@ -25,18 +27,48 @@ def settings(**overrides):
     return Settings(**{"start_delay": 0, **overrides})
 
 
-class SluggishEvent(threading.Event):
-    """Oversleeps every timed wait by 30 ms, like a throttled OS timer."""
+class VirtualClock(threading.Event):
+    """Replaces the engine's clock and stop event so timing tests don't depend on the machine.
+
+    Timed waits return immediately but move the clock forward by the timeout plus
+    `oversleep` (like a throttled OS timer), plus `stall_once` on the first wait.
+    The clock stops the engine once it reaches `run_for` seconds.
+    """
+
+    def __init__(self, run_for, oversleep=0.0, stall_once=0.0):
+        super().__init__()
+        self.now = 0.0
+        self.run_for = run_for
+        self.oversleep = oversleep
+        self.stall = stall_once
+
+    def perf_counter(self):
+        return self.now
 
     def wait(self, timeout=None):
-        return super().wait(None if timeout is None else timeout + 0.03)
+        if timeout is None:
+            return super().wait()
+        self.now += timeout + self.oversleep + self.stall
+        self.stall = 0.0
+        if self.now >= self.run_for:
+            self.set()
+        return self.is_set()
 
 
-def run_engine(settings, until=lambda engine: False, timeout=2.0, stop_event=None):
+def run_virtual(settings, run_for, oversleep=0.0, stall_once=0.0):
+    clock = VirtualClock(run_for, oversleep, stall_once)
+    mouse = FakeMouse(clock=clock.perf_counter)
+    engine = ClickerEngine(mouse)
+    engine._stop = clock
+    with mock.patch("autoclicker.clicker.time", SimpleNamespace(perf_counter=clock.perf_counter)):
+        engine.start(settings)
+        engine.join(5)
+    return engine, mouse
+
+
+def run_engine(settings, until=lambda engine: False, timeout=2.0):
     mouse, updates = FakeMouse(), []
     engine = ClickerEngine(mouse, on_update=updates.append)
-    if stop_event:
-        engine._stop = stop_event
     engine.start(settings)
     deadline = time.monotonic() + timeout
     while engine.running and not until(engine) and time.monotonic() < deadline:
@@ -61,39 +93,30 @@ class ClickerEngineTest(unittest.TestCase):
         _, mouse, _ = run_engine(settings(cps=1000, position=[10, 20], stop_after=2))
         self.assertEqual(mouse.events, [("move", 10, 20), ("click", "left", 1)] * 2)
 
-    def test_rate_is_roughly_respected(self):
-        engine, _, _ = run_engine(settings(cps=50), timeout=0.5)
-        self.assertTrue(20 <= engine.clicks <= 30, engine.clicks)
+    def test_rate_is_respected(self):
+        engine, _ = run_virtual(settings(cps=50), run_for=0.5)
+        self.assertAlmostEqual(engine.clicks, 25, delta=1)
 
     def test_rate_holds_when_timers_oversleep(self):
-        # 100 cps for 0.5 s = 50 clicks; without catch-up each 10 ms wait takes 40 ms (~12 clicks).
-        engine, _, _ = run_engine(settings(cps=100), timeout=0.5, stop_event=SluggishEvent())
-        self.assertTrue(40 <= engine.clicks <= 55, engine.clicks)
+        # 100 cps for 0.5 s, minus the final 30 ms oversleep that runs past the end: 47 clicks.
+        # Without catch-up each 10 ms wait takes 40 ms (~12 clicks).
+        engine, _ = run_virtual(settings(cps=100), run_for=0.5, oversleep=0.03)
+        self.assertAlmostEqual(engine.clicks, 47, delta=1)
 
     def test_catch_up_is_capped(self):
         # One 1 s stall at 1000 cps must not replay 1000 clicks, only MAX_LAG (0.1 s) worth.
-        class StallOnce(threading.Event):
-            stalled = False
-
-            def wait(self, timeout=None):
-                if timeout is not None and not self.stalled:
-                    self.stalled = True
-                    time.sleep(1.0)
-                return super().wait(timeout)
-
-        _, mouse, _ = run_engine(settings(cps=1000, stop_after=300), timeout=3, stop_event=StallOnce())
+        _, mouse = run_virtual(settings(cps=1000, stop_after=300), run_for=10, stall_once=1.0)
         t = mouse.click_times
         self.assertEqual(len(t), 300)
         # Clicks 2..101 are the make-up burst right after the stall...
-        self.assertLess(t[100] - t[1], 0.05)
+        self.assertLess(t[100] - t[1], 0.005)
         # ...and the remaining ~200 are paced at 1 ms, not replayed instantly.
-        self.assertGreater(t[299] - t[1], 0.15)
+        self.assertAlmostEqual(t[299] - t[100], 0.199, delta=0.005)
 
     def test_stop_during_start_delay_never_clicks(self):
         engine, mouse, updates = run_engine(settings(cps=1000, start_delay=5), timeout=0.2)
         self.assertEqual(mouse.events, [])
         self.assertEqual(updates[0]["state"], "countdown")
-
 
 
 class SettingsTest(unittest.TestCase):
