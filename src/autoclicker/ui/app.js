@@ -6,6 +6,7 @@ const MIN_CPS = 0.01;
 const MAX_CPS = 1000;
 const SLIDER_MAX = 1000; // slider is log-scaled over 1..1000 clicks/second
 const DEFAULT_HINT = "Works while any app is focused. Function keys avoid clashes.";
+const CONTENT_WIDTH = 460; // the layout is designed for this width
 
 const MAC_MODS = { "<ctrl>": "⌃", "<alt>": "⌥", "<shift>": "⇧", "<cmd>": "⌘" };
 const NAMED_KEYS = {
@@ -272,6 +273,21 @@ function bindCursorTracking() {
   document.documentElement.addEventListener("mouseleave", () => setOver(false));
 }
 
+// ---------- window size ----------
+
+// Size the window to the content; refits if the content grows (e.g. a wrapped warning).
+function bindWindowFit() {
+  let last = "";
+  const fit = () => {
+    const height = Math.ceil(document.body.getBoundingClientRect().height);
+    const key = `${window.innerWidth}x${window.innerHeight}->${height}`;
+    if (key === last) return;
+    last = key;
+    api.fit_window(window.innerWidth, window.innerHeight, CONTENT_WIDTH, height);
+  };
+  new ResizeObserver(fit).observe(document.body);
+}
+
 // ---------- startup ----------
 
 async function init() {
@@ -300,6 +316,7 @@ async function init() {
   bindHotkey();
   bindFooter();
   bindCursorTracking();
+  bindWindowFit();
 }
 
 window.addEventListener("pywebviewready", init);

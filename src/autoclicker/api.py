@@ -16,6 +16,7 @@ from .hotkeys import HotkeyListener
 from .settings import Settings
 
 PICK_TIMEOUT = 30  # seconds to wait for the user to click a spot when pinning
+SHOW_FALLBACK = 3  # seconds before showing the window anyway if the page never sized it
 
 
 def platform_warning() -> Optional[str]:
@@ -36,6 +37,7 @@ class Api:
     def __init__(self, settings: Settings):
         self._settings = settings
         self._window = None
+        self._shown = threading.Event()
         self._cursor_over_app = False
         self._engine = ClickerEngine(PynputMouse(), on_update=self._queue_update)
         self._engine.should_skip = lambda: self._cursor_over_app
@@ -49,6 +51,9 @@ class Api:
         self._window = window
 
     def _start_services(self) -> None:
+        fallback = threading.Timer(SHOW_FALLBACK, self._show)
+        fallback.daemon = True
+        fallback.start()
         try:
             self._hotkeys.set(self._settings.hotkey)
         except ValueError:
@@ -59,6 +64,11 @@ class Api:
     def _shutdown(self) -> None:
         self._engine.stop()
         self._hotkeys.stop()
+
+    def _show(self) -> None:
+        if not self._shown.is_set():
+            self._shown.set()
+            self._window.show()
 
     def _queue_update(self, state: dict) -> None:
         # evaluate_js blocks until the GUI thread runs it, so the click thread only
@@ -119,6 +129,18 @@ class Api:
         self._settings.always_on_top = bool(on)
         self._settings.save()
         self._window.on_top = self._settings.always_on_top
+
+    def fit_window(self, viewport_width: int, viewport_height: int, width: int, height: int) -> None:
+        """Resize so the page viewport becomes width x height, then show the window.
+
+        resize() sets the outer size, and whether that includes the title bar and borders
+        differs per platform, so the frame size is taken from what the page measured.
+        """
+        w = self._window
+        target = (w.width - viewport_width + width, w.height - viewport_height + height)
+        if target != (w.width, w.height):
+            w.resize(*target)
+        self._show()
 
     def pick_position(self) -> Optional[list]:
         """Block until the user clicks anywhere on screen; return that point."""

@@ -22,9 +22,11 @@ def main() -> None:
         "Auto Clicker",
         str(UI_DIR / "index.html"),
         js_api=api,
+        # Starting size only; the page resizes the window to fit its content, then shows it.
         width=460,
         height=580,
         resizable=False,
+        hidden=True,
         on_top=settings.always_on_top,
         background_color=BG_LIGHT if darkdetect.isLight() else BG_DARK,
     )
