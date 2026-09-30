@@ -14,6 +14,10 @@ dependencies = [
     "darkdetect>=0.8",
 ]
 
+[project.optional-dependencies]
+# Linux needs a web view backend; Qt WebEngine is the one PyInstaller can bundle.
+qt = ["pywebview[qt]"]
+
 [project.scripts]
 autoclicker = "autoclicker.__main__:main"
 
