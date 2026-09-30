@@ -36,9 +36,9 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            asset: AutoClicker-macos-arm64.zip
+            asset: AutoClicker-macos-arm64.dmg
           - os: windows-latest
-            asset: AutoClicker-windows-x64.zip
+            asset: AutoClicker-windows-x64.exe
           - os: ubuntu-latest
             asset: AutoClicker-linux-x64.tar.gz
     runs-on: ${{ matrix.os }}
@@ -67,10 +67,15 @@ jobs:
 
       - name: Package (macOS)
         if: runner.os == 'macOS'
-        run: ditto -c -k --keepParent dist/AutoClicker.app "${{ matrix.asset }}"
+        run: |
+          # Disk image with the app next to an Applications shortcut for drag-to-install.
+          mkdir dmg
+          cp -R dist/AutoClicker.app dmg/
+          ln -s /Applications dmg/Applications
+          hdiutil create -volname AutoClicker -srcfolder dmg -ov -format UDZO "${{ matrix.asset }}"
       - name: Package (Windows)
         if: runner.os == 'Windows'
-        run: Compress-Archive -Path dist/AutoClicker.exe -DestinationPath "${{ matrix.asset }}"
+        run: Copy-Item dist/AutoClicker.exe "${{ matrix.asset }}"
       - name: Package (Linux)
         if: runner.os == 'Linux'
         run: tar -czf "${{ matrix.asset }}" -C dist AutoClicker

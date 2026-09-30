@@ -3,6 +3,8 @@ __pycache__/
 *.egg-info/
 build/
 dist/
+*.dmg
+*.exe
 *.zip
 *.tar.gz
 .DS_Store
