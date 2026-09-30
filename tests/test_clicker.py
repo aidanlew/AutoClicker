@@ -25,6 +25,11 @@ class FakeMouse:
         self.events.append(("release", button))
 
 
+def settings(**overrides):
+    """Settings for engine tests: no start delay unless a test asks for one."""
+    return Settings(**{"start_delay": 0, **overrides})
+
+
 class SluggishEvent(threading.Event):
     """Oversleeps every timed wait by 30 ms, like a throttled OS timer."""
 
@@ -50,26 +55,26 @@ def run_engine(settings, until=lambda engine: False, timeout=2.0, should_skip=No
 
 class ClickerEngineTest(unittest.TestCase):
     def test_stop_after_limits_click_count(self):
-        engine, mouse, updates = run_engine(Settings(cps=1000, stop_after=25))
+        engine, mouse, updates = run_engine(settings(cps=1000, stop_after=25))
         self.assertEqual(engine.clicks, 25)
         self.assertEqual(len(mouse.events), 25)
         self.assertEqual(updates[-1], {"state": "idle", "clicks": 25})
 
     def test_double_click_sends_count_two(self):
-        _, mouse, _ = run_engine(Settings(cps=1000, click_type="double", button="right", stop_after=3))
+        _, mouse, _ = run_engine(settings(cps=1000, click_type="double", button="right", stop_after=3))
         self.assertEqual(mouse.events, [("click", "right", 2)] * 3)
 
     def test_pinned_position_moves_before_each_click(self):
-        _, mouse, _ = run_engine(Settings(cps=1000, position=[10, 20], stop_after=2))
+        _, mouse, _ = run_engine(settings(cps=1000, position=[10, 20], stop_after=2))
         self.assertEqual(mouse.events, [("move", 10, 20), ("click", "left", 1)] * 2)
 
     def test_rate_is_roughly_respected(self):
-        engine, _, _ = run_engine(Settings(cps=50), timeout=0.5)
+        engine, _, _ = run_engine(settings(cps=50), timeout=0.5)
         self.assertTrue(20 <= engine.clicks <= 30, engine.clicks)
 
     def test_rate_holds_when_timers_oversleep(self):
         # 100 cps for 0.5 s = 50 clicks; without catch-up each 10 ms wait takes 40 ms (~12 clicks).
-        engine, _, _ = run_engine(Settings(cps=100), timeout=0.5, stop_event=SluggishEvent())
+        engine, _, _ = run_engine(settings(cps=100), timeout=0.5, stop_event=SluggishEvent())
         self.assertTrue(40 <= engine.clicks <= 55, engine.clicks)
 
     def test_catch_up_is_capped(self):
@@ -83,7 +88,7 @@ class ClickerEngineTest(unittest.TestCase):
                     time.sleep(1.0)
                 return super().wait(timeout)
 
-        _, mouse, _ = run_engine(Settings(cps=1000, stop_after=300), timeout=3, stop_event=StallOnce())
+        _, mouse, _ = run_engine(settings(cps=1000, stop_after=300), timeout=3, stop_event=StallOnce())
         t = mouse.click_times
         self.assertEqual(len(t), 300)
         # Clicks 2..101 are the make-up burst right after the stall...
@@ -92,21 +97,21 @@ class ClickerEngineTest(unittest.TestCase):
         self.assertGreater(t[299] - t[1], 0.15)
 
     def test_skips_clicks_while_cursor_over_app(self):
-        engine, mouse, updates = run_engine(Settings(cps=1000), timeout=0.2, should_skip=lambda: True)
+        engine, mouse, updates = run_engine(settings(cps=1000), timeout=0.2, should_skip=lambda: True)
         self.assertEqual(mouse.events, [])
         self.assertIn("paused", [u["state"] for u in updates])
 
     def test_skip_does_not_apply_to_pinned_position(self):
-        _, mouse, _ = run_engine(Settings(cps=1000, position=[1, 1], stop_after=1), should_skip=lambda: True)
+        _, mouse, _ = run_engine(settings(cps=1000, position=[1, 1], stop_after=1), should_skip=lambda: True)
         self.assertIn(("click", "left", 1), mouse.events)
 
     def test_stop_during_start_delay_never_clicks(self):
-        engine, mouse, updates = run_engine(Settings(cps=1000, start_delay=5), timeout=0.2)
+        engine, mouse, updates = run_engine(settings(cps=1000, start_delay=5), timeout=0.2)
         self.assertEqual(mouse.events, [])
         self.assertEqual(updates[0]["state"], "countdown")
 
     def test_hold_presses_until_stopped(self):
-        _, mouse, _ = run_engine(Settings(click_type="hold", button="middle"), timeout=0.1)
+        _, mouse, _ = run_engine(settings(click_type="hold", button="middle"), timeout=0.1)
         self.assertEqual(mouse.events, [("press", "middle"), ("release", "middle")])
 
 
@@ -119,6 +124,9 @@ class SettingsTest(unittest.TestCase):
         self.assertIsNone(s.stop_after)
         self.assertEqual(s.start_delay, 0)
         self.assertIsNone(s.position)
+
+    def test_default_start_delay_is_three_seconds(self):
+        self.assertEqual(Settings().start_delay, 3.0)
 
 
 if __name__ == "__main__":

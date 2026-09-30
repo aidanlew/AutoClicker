@@ -22,7 +22,7 @@ class Settings:
     click_type: str = "single"
     position: Optional[List[int]] = None  # None = follow the cursor
     stop_after: Optional[int] = None  # None = run until stopped
-    start_delay: float = 0.0
+    start_delay: float = 3.0  # time to move the cursor to the target after pressing Start
     hotkey: str = "<f6>"  # pynput GlobalHotKeys format
     always_on_top: bool = False
 
