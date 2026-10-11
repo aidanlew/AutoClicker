@@ -12,12 +12,16 @@ VERSION = os.environ.get("APP_VERSION", "0.0.0")
 
 # pynput picks its OS backend at runtime, so PyInstaller can't see the import.
 backend = {"darwin": "_darwin", "win32": "_win32"}.get(sys.platform, "_xorg")
+hiddenimports = [f"pynput.keyboard.{backend}", f"pynput.mouse.{backend}"]
+if sys.platform == "win32":
+    # pywebview chooses the Windows GUI backend dynamically, so include it explicitly.
+    hiddenimports.append("webview.platforms.winforms")
 
 a = Analysis(
     [str(ROOT / "packaging" / "entry.py")],
     pathex=[str(ROOT / "src")],
     datas=[(str(ROOT / "src" / "autoclicker" / "ui"), "autoclicker/ui")],
-    hiddenimports=[f"pynput.keyboard.{backend}", f"pynput.mouse.{backend}"],
+    hiddenimports=hiddenimports,
 )
 pyz = PYZ(a.pure)
 
